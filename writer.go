@@ -91,6 +91,17 @@ func (c *CdbWriter) Add(Key, Data string) (err error) {
 	return nil
 }
 
+/* Rollback a pending transaction by removing data written */
+func (c CdbWriter) Rollback() (err error) {
+	/* remove database file */
+	if err = os.Remove(c.File.Name()); err != nil {
+		return err
+	}
+
+	/* close database without flush */
+	return c.File.Close()
+}
+
 // Write HashTable at the end of the file, PointerTable at
 // the beginning of the database and finally close the file.
 func (c CdbWriter) Commit() (err error) {
