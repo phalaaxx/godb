@@ -1,6 +1,6 @@
 package cdb
 
-// Calculate cdb hash
+/* cdbhash calculates a cdb hash */
 func cdbhash(data []byte) uint32 {
 	h := uint32(5381)
 	for _, r := range data {

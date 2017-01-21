@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-// CdbWriter represents a constant hash database
+/* CdbWriter represents a constant hash database */
 type CdbWriter struct {
 	File     *os.File
 	Target   string
@@ -17,7 +17,7 @@ type CdbWriter struct {
 	Position uint32
 }
 
-// Create a new CDB database file
+/* Create a new CDB database file */
 func Create(Name string) (cdb *CdbWriter, err error) {
 	cdb = new(CdbWriter)
 	cdb.Target = Name
@@ -26,35 +26,35 @@ func Create(Name string) (cdb *CdbWriter, err error) {
 	var BaseName string
 	var FullName string
 
-	// Get absolute path to Name
+	/* get absolute path to Name */
 	if FullName, err = filepath.Abs(Name); err != nil {
 		return nil, err
 	}
 
-	// Get directory location of Name
+	/* get directory location of Name */
 	FileDir = filepath.Dir(FullName)
 
-	// Get filename of Name
+	/* get filename of Name */
 	BaseName = filepath.Base(FullName)
 
-	// Open file for writing
+	/* open file for writing */
 	if cdb.File, err = ioutil.TempFile(FileDir, BaseName); err != nil {
 		return nil, err
 	}
 	cdb.Position = 2048
 
-	// Reserve space for pointers table
+	/* reserve space for pointers table */
 	if _, err = cdb.File.Seek(int64(cdb.Position), os.SEEK_SET); err != nil {
 		return nil, err
 	}
 
-	// Allocate memory for HashTable
+	/* allocate memory for HashTable */
 	cdb.Elements = make(map[uint32][]HashItem)
 
 	return cdb, nil
 }
 
-// Add a key-value pair to CDB database
+/* Add a key-value pair to CDB database */
 func (c *CdbWriter) Add(Key, Data string) (err error) {
 	buf := new(bytes.Buffer)
 
@@ -75,17 +75,17 @@ func (c *CdbWriter) Add(Key, Data string) (err error) {
 		return err
 	}
 
-	// Add data in hash table
+	/* add data in hash table */
 	hash := cdbhash([]byte(Key))
 	hashmod := hash % 256
 
-	// make sure hashtable exists
+	/* make sure hashtable exists */
 	if _, ok := c.Elements[hashmod]; !ok {
 		c.Elements[hashmod] = []HashItem{}
 	}
 	c.Elements[hashmod] = append(c.Elements[hashmod], HashItem{hash, c.Position})
 
-	// Get next global position
+	/* get next global position */
 	c.Position += uint32(len(Key)) + uint32(len(Data)) + 8
 
 	return nil
@@ -102,19 +102,19 @@ func (c CdbWriter) Rollback() (err error) {
 	return c.File.Close()
 }
 
-// Write HashTable at the end of the file, PointerTable at
-// the beginning of the database and finally close the file.
+/* Commit HashTable at the end of the file, PointerTable at
+   the beginning of the database and finally close the file */
 func (c CdbWriter) Commit() (err error) {
 	var Pointers [256]HashPointer
 	var hash uint32
 
-	// Prepare a hash table map
+	/* prepare a hash table map */
 	HashTable := make(map[uint32][]HashItem)
 	buf := new(bytes.Buffer)
 	for hash, _ := range c.Elements {
 		ElementsLen := uint32(len(c.Elements[hash]))
 
-		// Make empty hash table
+		/* make empty hash table */
 		HashTable[hash] = make([]HashItem, ElementsLen*2)
 
 		for _, item := range c.Elements[hash] {
@@ -128,13 +128,13 @@ func (c CdbWriter) Commit() (err error) {
 			}
 		}
 
-		// Write hash table data to the buffer
+		/* write hash table data to the buffer */
 		if err = binary.Write(buf, binary.LittleEndian, HashTable[hash]); err != nil {
 			return err
 		}
 	}
 
-	// Fill in pointers table
+	/* fill in pointers table */
 	for hash = 0; hash < 256; hash++ {
 		Pointers[hash].Position = c.Position
 		Pointers[hash].SlotsNum = 0
@@ -146,26 +146,26 @@ func (c CdbWriter) Commit() (err error) {
 		}
 	}
 
-	// Flush hash tables at
+	/* flush hash tables at */
 	if _, err = c.File.Write(buf.Bytes()); err != nil {
 		return err
 	}
 
-	// Go to the beginning of the file
+	/* go to the beginning of the file */
 	if _, err = c.File.Seek(0, os.SEEK_SET); err != nil {
 		return err
 	}
 
-	// Write pointers table
+	/* write pointers table */
 	if err = binary.Write(c.File, binary.LittleEndian, Pointers); err != nil {
 		return err
 	}
 
-	// Close database
+	/* close database */
 	if err = c.File.Close(); err != nil {
 		return err
 	}
 
-	// Swap database files
+	/* swap database files */
 	return os.Rename(c.File.Name(), c.Target)
 }
