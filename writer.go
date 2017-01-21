@@ -93,7 +93,7 @@ func (c *CdbWriter) Add(Key, Data string) (err error) {
 
 // Write HashTable at the end of the file, PointerTable at
 // the beginning of the database and finally close the file.
-func (c CdbWriter) Close() (err error) {
+func (c CdbWriter) Commit() (err error) {
 	var Pointers [256]HashPointer
 	var hash uint32
 
