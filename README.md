@@ -9,7 +9,12 @@ Usage
 
 ```go
 package main
-import "github.com/phalaaxx/cdb"
+
+import (
+	"fmt"
+	"github.com/phalaaxx/cdb"
+	"log"
+)
 
 func main() {
 	var err error
