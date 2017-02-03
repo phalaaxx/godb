@@ -4,8 +4,7 @@ package cdb
 func cdbhash(data []byte) uint32 {
 	h := uint32(5381)
 	for _, r := range data {
-		h = (h + (h << 5)) ^ 0xFFFFFFFF
-		h ^= uint32(r)
+		h = ((h << 5) + h) ^ uint32(r)
 	}
 	return h
 }
