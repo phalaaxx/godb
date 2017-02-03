@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 /* CdbWriter represents a constant hash database */
@@ -163,4 +164,36 @@ func (c CdbWriter) Commit() (err error) {
 
 	/* swap database files */
 	return os.Rename(c.File.Name(), c.Target)
+}
+
+/* Update updates cdb database if its mtime  is older than the
+   specified changed time by running callback to feed data */
+func Update(database string, changed time.Time, callback func(*CdbWriter) error) (err error) {
+	/* get database mtime */
+	var mtime time.Time
+	if st, err := os.Stat(database); err == nil {
+		mtime = st.ModTime()
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+
+	/* check if data has changed */
+	if !mtime.Before(changed) {
+		return nil
+	}
+
+	/* open database for writing */
+	var db *CdbWriter
+	if db, err = Create(database); err != nil {
+		return err
+	}
+
+	/* run callback on the database */
+	if err = callback(db); err != nil {
+		db.Rollback()
+		return err
+	}
+
+	/* commit and activate new database */
+	return db.Commit()
 }
