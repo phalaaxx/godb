@@ -19,7 +19,7 @@ import (
 func main() {
 	var err error
 	var db *Writer
-	if db, err = cdb.Create("test.cdb"); err != nil {
+	if db, err = cdb.Create("test.cdb", 0644); err != nil {
 		log.Fatal(fmt.Errorf("Create: %v", err))
 	}
 	if err = db.Add("email@address.com", "alias@address.com"); err != nil {

@@ -19,7 +19,7 @@ type Writer struct {
 }
 
 /* Create a new CDB database file */
-func Create(Name string) (cdb *Writer, err error) {
+func Create(Name string, Mode os.FileMode) (cdb *Writer, err error) {
 	cdb = new(Writer)
 	cdb.Target = Name
 
@@ -42,6 +42,13 @@ func Create(Name string) (cdb *Writer, err error) {
 	if cdb.File, err = ioutil.TempFile(FileDir, BaseName); err != nil {
 		return nil, err
 	}
+
+	/* set file mode */
+	if err = cdb.File.Chmod(Mode); err != nil {
+		return nil, err
+	}
+
+	/* set initial position */
 	cdb.Position = 2048
 
 	/* reserve space for pointers table */
@@ -182,7 +189,7 @@ func Update(database string, changed time.Time, callback func(*Writer) error) (e
 
 	/* open database for writing */
 	var db *Writer
-	if db, err = Create(database); err != nil {
+	if db, err = Create(database, 0644); err != nil {
 		return err
 	}
 
