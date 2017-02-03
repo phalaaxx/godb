@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-/* CdbWriter represents a constant hash database */
-type CdbWriter struct {
+/* Writer represents a constant hash database */
+type Writer struct {
 	File      *os.File
 	Target    string
 	HashTable [256][]HashItem
@@ -19,8 +19,8 @@ type CdbWriter struct {
 }
 
 /* Create a new CDB database file */
-func Create(Name string) (cdb *CdbWriter, err error) {
-	cdb = new(CdbWriter)
+func Create(Name string) (cdb *Writer, err error) {
+	cdb = new(Writer)
 	cdb.Target = Name
 
 	var FileDir string
@@ -53,7 +53,7 @@ func Create(Name string) (cdb *CdbWriter, err error) {
 }
 
 /* Add a key-value pair to CDB database */
-func (c *CdbWriter) Add(Key, Data string) (err error) {
+func (c *Writer) Add(Key, Data string) (err error) {
 	buf := new(bytes.Buffer)
 
 	if err = binary.Write(buf, binary.LittleEndian, uint32(len(Key))); err != nil {
@@ -90,7 +90,7 @@ func (c *CdbWriter) Add(Key, Data string) (err error) {
 }
 
 /* Rollback a pending transaction by removing data written */
-func (c CdbWriter) Rollback() (err error) {
+func (c Writer) Rollback() (err error) {
 	/* remove database file */
 	if err = os.Remove(c.File.Name()); err != nil {
 		return err
@@ -102,7 +102,7 @@ func (c CdbWriter) Rollback() (err error) {
 
 /* Commit HashTable at the end of the file, PointerTable at
    the beginning of the database and finally close the file */
-func (c CdbWriter) Commit() (err error) {
+func (c Writer) Commit() (err error) {
 	var Pointers []HashPointer
 
 	/* prepare a hash table map */
@@ -166,7 +166,7 @@ func (c CdbWriter) Commit() (err error) {
 
 /* Update updates cdb database if its mtime  is older than the
    specified changed time by running callback to feed data */
-func Update(database string, changed time.Time, callback func(*CdbWriter) error) (err error) {
+func Update(database string, changed time.Time, callback func(*Writer) error) (err error) {
 	/* get database mtime */
 	var mtime time.Time
 	if st, err := os.Stat(database); err == nil {
@@ -181,7 +181,7 @@ func Update(database string, changed time.Time, callback func(*CdbWriter) error)
 	}
 
 	/* open database for writing */
-	var db *CdbWriter
+	var db *Writer
 	if db, err = Create(database); err != nil {
 		return err
 	}
