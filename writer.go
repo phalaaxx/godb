@@ -109,7 +109,7 @@ func (c CdbWriter) Commit() (err error) {
 	/* prepare a hash table map */
 	buf := new(bytes.Buffer)
 
-	for idx, hash := range c.HashTable {
+	for _, hash := range c.HashTable {
 		slots := uint32(len(hash) * 2)
 
 		/* prepare pointers table item */
