@@ -11,10 +11,10 @@ import (
 
 /* CdbWriter represents a constant hash database */
 type CdbWriter struct {
-	File     *os.File
-	Target   string
-	Elements map[uint32][]HashItem
-	Position uint32
+	File      *os.File
+	Target    string
+	HashTable [256][]HashItem
+	Position  uint32
 }
 
 /* Create a new CDB database file */
@@ -48,9 +48,6 @@ func Create(Name string) (cdb *CdbWriter, err error) {
 		return nil, err
 	}
 
-	/* allocate memory for HashTable */
-	cdb.Elements = make(map[uint32][]HashItem)
-
 	return cdb, nil
 }
 
@@ -79,11 +76,13 @@ func (c *CdbWriter) Add(Key, Data string) (err error) {
 	hash := cdbhash([]byte(Key))
 	hashmod := hash % 256
 
-	/* make sure hashtable exists */
-	if _, ok := c.Elements[hashmod]; !ok {
-		c.Elements[hashmod] = []HashItem{}
-	}
-	c.Elements[hashmod] = append(c.Elements[hashmod], HashItem{hash, c.Position})
+	/* update hashtable */
+	c.HashTable[hashmod] = append(
+		c.HashTable[hashmod],
+		HashItem{hash, c.Position},
+	)
+
+	fmt.Println("DBG:", Key, hash, hashmod, c.Position)
 
 	/* get next global position */
 	c.Position += uint32(len(Key)) + uint32(len(Data)) + 8
@@ -105,43 +104,39 @@ func (c CdbWriter) Rollback() (err error) {
 /* Commit HashTable at the end of the file, PointerTable at
    the beginning of the database and finally close the file */
 func (c CdbWriter) Commit() (err error) {
-	var Pointers [256]HashPointer
-	var hash uint32
+	var Pointers []HashPointer
 
 	/* prepare a hash table map */
-	HashTable := make(map[uint32][]HashItem)
 	buf := new(bytes.Buffer)
-	for hash, _ := range c.Elements {
-		ElementsLen := uint32(len(c.Elements[hash]))
 
-		/* make empty hash table */
-		HashTable[hash] = make([]HashItem, ElementsLen*2)
+	for idx, hash := range c.HashTable {
+		slots := uint32(len(hash) * 2)
 
-		for _, item := range c.Elements[hash] {
-			HashTableSlot := item.Hash / 256 % ElementsLen
+		/* prepare pointers table item */
+		Pointers = append(
+			Pointers,
+			HashPointer{c.Position, slots},
+		)
 
-			for slot := HashTableSlot; slot < ElementsLen*2; slot++ {
-				if HashTable[hash][slot].Position == 0 && HashTable[hash][slot].Hash == 0 {
-					HashTable[hash][slot] = item
-					break
+		if slots != 0 {
+			/* prepare ordered hash table */
+			HashTable := make([]HashItem, slots)
+			for idx, h := range hash {
+				slotpos := h.Hash / 256 % slots
+				for i := slotpos; i < slots; i++ {
+					if HashTable[i].Hash == 0 && HashTable[i].Position == 0 {
+						HashTable[i] = hash[idx]
+						break
+					}
 				}
 			}
-		}
 
-		/* write hash table data to the buffer */
-		if err = binary.Write(buf, binary.LittleEndian, HashTable[hash]); err != nil {
-			return err
-		}
-	}
+			/* write hash table to buffer */
+			if err = binary.Write(buf, binary.LittleEndian, HashTable); err != nil {
+				return err
+			}
 
-	/* fill in pointers table */
-	for hash = 0; hash < 256; hash++ {
-		Pointers[hash].Position = c.Position
-		Pointers[hash].SlotsNum = 0
-
-		if _, ok := HashTable[hash]; ok {
-			slots := uint32(len(HashTable[hash]))
-			Pointers[hash].SlotsNum = slots
+			/* calculate next position */
 			c.Position += slots * 8
 		}
 	}
