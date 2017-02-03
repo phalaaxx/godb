@@ -83,8 +83,6 @@ func (c *CdbWriter) Add(Key, Data string) (err error) {
 		HashItem{hash, c.Position},
 	)
 
-	fmt.Println("DBG:", Key, hash, hashmod, c.Position)
-
 	/* get next global position */
 	c.Position += uint32(len(Key)) + uint32(len(Data)) + 8
 
