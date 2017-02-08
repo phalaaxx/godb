@@ -2,9 +2,9 @@ cdb
 ===
 
 This is a simple interface for Golang to constant database (cdb) file format.  
-Currently the interface only supports writing.
+The interface supports both reading and writing.
 
-Usage
+Writing new cdb database
 ---
 
 ```go
@@ -59,5 +59,40 @@ func main() {
 	if err != nil {
 		log.Fatal(fmt.Errorf("cdb.Update: %v", err))
 	}
+}
+```
+
+Reading from existing cdb database
+---
+
+The following example uses Lookup function which performs cdb file open, read
+and close all in one single step. Second argument of Lookup is a callback
+function which returns error and accepts one argument of type \*cdb.Reader.
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/phalaaxx/cdb"
+	"log"
+)
+
+func main() {
+	var value *string
+    err := cdb.Lookup(
+		"virtual-alias-maps.cdb",
+		func (db *cdb.Reader) (err error) {
+			if v, err = db.Get("email@address.com"); err != nil {
+				return err
+			}
+			return nil
+		},
+	)
+	if err != nil {
+		log.Fatal(fmt.Errorf("cdb.Lookup: %v", err))
+	}
+	// should print "alias@address.com"
+	fmt.Println("Value: ", *value)
 }
 ```
