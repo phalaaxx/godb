@@ -116,7 +116,7 @@ func (c Writer) Commit() (err error) {
 	buf := new(bytes.Buffer)
 
 	for _, hash := range c.HashTable {
-		slots := uint32(len(hash) * 2)
+		slots := uint32(len(hash) + 1)
 
 		/* prepare pointers table item */
 		Pointers = append(
@@ -129,10 +129,13 @@ func (c Writer) Commit() (err error) {
 			HashTable := make([]HashItem, slots)
 			for idx, h := range hash {
 				slotpos := h.Hash / 256 % slots
-				for i := slotpos; i < slots; i++ {
+				for i := slotpos; ; i++ {
 					if HashTable[i].Hash == 0 && HashTable[i].Position == 0 {
 						HashTable[i] = hash[idx]
 						break
+					}
+					if i == slots {
+						i = 0
 					}
 				}
 			}
