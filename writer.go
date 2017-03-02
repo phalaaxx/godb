@@ -129,11 +129,12 @@ func (c Writer) Commit() (err error) {
 			HashTable := make([]HashItem, slots)
 			for idx, h := range hash {
 				slotpos := h.Hash / 256 % slots
-				for i := slotpos; ; i++ {
+				for i := slotpos; ; {
 					if HashTable[i].Hash == 0 && HashTable[i].Position == 0 {
 						HashTable[i] = hash[idx]
 						break
 					}
+					i++
 					if i == slots {
 						i = 0
 					}
