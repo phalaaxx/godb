@@ -82,7 +82,7 @@ func (c *Writer) Add(Key, Data string) (err error) {
 	}
 
 	/* add data in hash table */
-	hash := cdbhash([]byte(Key))
+	hash := cdbHash([]byte(Key))
 	hashmod := hash % 256
 
 	/* update hashtable */

@@ -17,7 +17,7 @@ func (r *Reader) Get(Key string) (*string, error) {
 	var err error
 
 	// calculate hash and hash table
-	hash := cdbhash([]byte(Key))
+	hash := cdbHash([]byte(Key))
 	table := r.Pointers[hash%256]
 
 	// only read HashTable if SlotsNum is non-zero
