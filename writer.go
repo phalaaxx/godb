@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -52,7 +53,7 @@ func Create(Name string, Mode os.FileMode) (cdb *Writer, err error) {
 	cdb.Position = 2048
 
 	/* reserve space for pointers table */
-	if _, err = cdb.File.Seek(int64(cdb.Position), os.SEEK_SET); err != nil {
+	if _, err = cdb.File.Seek(int64(cdb.Position), io.SeekStart); err != nil {
 		return nil, err
 	}
 
@@ -157,7 +158,7 @@ func (c Writer) Commit() (err error) {
 	}
 
 	/* go to the beginning of the file */
-	if _, err = c.File.Seek(0, os.SEEK_SET); err != nil {
+	if _, err = c.File.Seek(0, io.SeekStart); err != nil {
 		return err
 	}
 
