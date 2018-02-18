@@ -54,28 +54,28 @@ func (r *Reader) Get(Key string) (*string, error) {
 			}
 
 			// parse key and value lengths
-			var klen, vlen uint32
-			if err = binary.Read(buffer, binary.LittleEndian, &klen); err != nil {
+			var keyLen, valueLen uint32
+			if err = binary.Read(buffer, binary.LittleEndian, &keyLen); err != nil {
 				return nil, err
 			}
-			if err = binary.Read(buffer, binary.LittleEndian, &vlen); err != nil {
+			if err = binary.Read(buffer, binary.LittleEndian, &valueLen); err != nil {
 				return nil, err
 			}
 
 			// read key and value data
-			buffer = bytes.NewBuffer(make([]byte, klen+vlen))
+			buffer = bytes.NewBuffer(make([]byte, keyLen+valueLen))
 			if _, err = r.File.Read(buffer.Bytes()); err != nil {
 				return nil, err
 			}
 
 			// compare keys
-			if buffer.String()[0:klen] != Key {
+			if buffer.String()[0:keyLen] != Key {
 				// key mismatch, return
 				return nil, nil
 			}
 
 			// return value
-			Value := buffer.String()[klen : klen+vlen]
+			Value := buffer.String()[keyLen: keyLen+valueLen]
 			return &Value, nil
 		}
 	}
@@ -93,13 +93,13 @@ func Open(Name string) (cdb *Reader, err error) {
 	}
 
 	// read pointers table data
-	bbuf := make([]byte, 2048)
-	if _, err = cdb.File.Read(bbuf); err != nil {
+	binaryBuffer := make([]byte, 2048)
+	if _, err = cdb.File.Read(binaryBuffer); err != nil {
 		return nil, err
 	}
 
 	// parse pointers table data into HashPointer structure
-	buffer := bytes.NewBuffer(bbuf)
+	buffer := bytes.NewBuffer(binaryBuffer)
 	if err = binary.Read(buffer, binary.LittleEndian, &cdb.Pointers); err != nil {
 		return nil, err
 	}

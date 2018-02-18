@@ -65,16 +65,16 @@ func (c *Writer) Add(Key, Data string) (err error) {
 	buf := new(bytes.Buffer)
 
 	if err = binary.Write(buf, binary.LittleEndian, uint32(len(Key))); err != nil {
-		return fmt.Errorf("KeyLen: %v", err)
+		return fmt.Errorf("key length: %v", err)
 	}
 	if err = binary.Write(buf, binary.LittleEndian, uint32(len(Data))); err != nil {
-		return fmt.Errorf("DataLen: %v", err)
+		return fmt.Errorf("data length: %v", err)
 	}
 	if err = binary.Write(buf, binary.LittleEndian, []byte(Key)); err != nil {
-		return fmt.Errorf("Key: %v", err)
+		return fmt.Errorf("key: %v", err)
 	}
 	if err = binary.Write(buf, binary.LittleEndian, []byte(Data)); err != nil {
-		return fmt.Errorf("Data: %v", err)
+		return fmt.Errorf("data: %v", err)
 	}
 
 	if _, err = c.File.Write(buf.Bytes()); err != nil {
@@ -83,11 +83,11 @@ func (c *Writer) Add(Key, Data string) (err error) {
 
 	/* add data in hash table */
 	hash := cdbHash([]byte(Key))
-	hashmod := hash % 256
+	hashMod := hash % 256
 
-	/* update hashtable */
-	c.HashTable[hashmod] = append(
-		c.HashTable[hashmod],
+	/* update HashTable */
+	c.HashTable[hashMod] = append(
+		c.HashTable[hashMod],
 		HashItem{hash, c.Position},
 	)
 
@@ -129,8 +129,8 @@ func (c Writer) Commit() (err error) {
 			/* prepare ordered hash table */
 			HashTable := make([]HashItem, slots)
 			for idx, h := range hash {
-				slotpos := h.Hash / 256 % slots
-				for i := slotpos; ; {
+				slotPos := h.Hash / 256 % slots
+				for i := slotPos; ; {
 					if HashTable[i].Hash == 0 && HashTable[i].Position == 0 {
 						HashTable[i] = hash[idx]
 						break
@@ -176,19 +176,19 @@ func (c Writer) Commit() (err error) {
 	return os.Rename(c.File.Name(), c.Target)
 }
 
-/* Update updates cdb database if its mtime  is older than the
+/* Update updates cdb database if its modTime is older than the
    specified changed time by running callback to feed data */
 func Update(database string, changed time.Time, callback func(*Writer) error) (err error) {
-	/* get database mtime */
-	var mtime time.Time
+	/* get database modTime */
+	var modTime time.Time
 	if st, err := os.Stat(database); err == nil {
-		mtime = st.ModTime()
+		modTime = st.ModTime()
 	} else if !os.IsNotExist(err) {
 		return err
 	}
 
 	/* check if data has changed */
-	if !mtime.Before(changed) {
+	if !modTime.Before(changed) {
 		return nil
 	}
 
